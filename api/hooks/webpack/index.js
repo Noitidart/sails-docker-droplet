@@ -1,46 +1,24 @@
-const webpack = require('webpack');
-const { once } = require('lodash');
-
 /**
- * webpack hook
+ * Webpack
  *
- * If production, build once, then trigger `done`.
- * If dev, build once, trigger `done`, then watch for changes to trigger rebuild.
- *
- * @description :: A hook definition.  Extends Sails by adding shadow routes, implicit actions, and/or initialization logic.
- * @docs        :: https://sailsjs.com/docs/concepts/extending-sails/hooks
+ * @description :: Use Webpack instead of Grunt to build frontend
  */
 
-module.exports = function defineWebpackHook(sails) {
-
-  if (!sails.config.webpack) {
-    sails.log.warn('sails-hook-webpack: No Webpack options have been defined.');
-    return {};
-  }
-
-  if (!sails.config.webpack.config) {
-    sails.log.warn('sails-hook-webpack: Configure your config/webpack.js file.');
-    return {};
-  }
+module.exports = function webpackHook(sails) {
 
   return {
+    initialize: function(done) {
+      // in production do not run this, a production build should have been made via the webpack-cli when building sources to deploy to host
+      // if test environment, build once, then trigger `done`
+      // if dev, build once, trigger `done`, then watch for changes to trigger rebuild
 
-    /**
-     * Runs when this Sails app loads/lifts.
-     */
-    initialize: async function(done) {
+      if (global.isSailsScriptEnv || sails.config.environment === 'production') return void done();
 
-      sails.log.info('Initializing custom hook (`webpack`)');
+      const webpack = require('webpack');
+      const { once } = require('lodash');
+      const config = require('../../../webpack.config');
 
-      // TODO: don't run if its is a `sails run foofoofoo`?
-      // TODO: don't watch for rebuilds if we're in test environment?
-      const isSailsScriptEnv = () => global.isSailsScriptEnv;
-      const isTestEnv = () => sails.config.port !== 1337;
-
-      if (isSailsScriptEnv()) void done();
-
-      const compiler = webpack(sails.config.webpack.config);
-
+      const compiler = webpack(config);
 
       // on first compilation (due to either run or watch) if it fails,
       // it should throw, else it should call `done`
@@ -57,22 +35,21 @@ module.exports = function defineWebpackHook(sails) {
         triggerDoneOnce(...args);
       };
 
-      if (sails.config.environment === 'production' || isTestEnv()) {
+      if (sails.config.environment === 'test') {
         compiler.run(compileCallback);
       } else {
         sails.log.info('sails-hook-webpack: Watching for changes...');
-        compiler.watch(sails.config.webpack.config.watchOptions, compileCallback);
+        compiler.watch(config.watchOptions, compileCallback);
       }
 
     }
-
   };
 
-};
-
-function logCompileInfo(err, stats) {
-  if (err) {
-    sails.log.error('sails-hook-webpack: Build error: \n\n', err);
+  function logCompileInfo(err, stats) {
+    if (err) {
+      sails.log.error('sails-hook-webpack: Build error: \n\n', err);
+    }
+    sails.log[stats.hasErrors() ? 'error' : 'info'](`sails-hook-webpack:\n${stats.toString({ colors: true, chunks: true })}`);
   }
-  sails.log[stats.hasErrors() ? 'error' : 'info'](`sails-hook-webpack:\n${stats.toString({ colors: true, chunks: true })}`);
-}
+
+};

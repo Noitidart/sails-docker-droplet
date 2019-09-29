@@ -1,28 +1,17 @@
-# sails-docker-droplet
-
-a [Sails v1](https://sailsjs.com) application
-
-
-### Links
-
-+ [Sails framework documentation](https://sailsjs.com/get-started)
-+ [Version notes / upgrading](https://sailsjs.com/documentation/upgrading)
-+ [Deployment tips](https://sailsjs.com/documentation/concepts/deployment)
-+ [Community support options](https://sailsjs.com/support)
-+ [Professional / enterprise options](https://sailsjs.com/enterprise)
-
-
-### Version info
-
-This app was originally generated on Sun Sep 29 2019 07:32:26 GMT-0700 (Pacific Daylight Time) using Sails v1.2.3.
-
-<!-- Internally, Sails used [`sails-generate@1.16.13`](https://github.com/balderdashy/sails-generate/tree/v1.16.13/lib/core-generators/new). -->
-
-
-This project's boilerplate is based on an expanded seed app provided by the [Sails core team](https://sailsjs.com/about) to make it easier for you to build on top of ready-made features like authentication, enrollment, email verification, and billing.  For more information, [drop us a line](https://sailsjs.com/support).
-
-
-<!--
-Note:  Generators are usually run using the globally-installed `sails` CLI (command-line interface).  This CLI version is _environment-specific_ rather than app-specific, thus over time, as a project's dependencies are upgraded or the project is worked on by different developers on different computers using different versions of Node.js, the Sails dependency in its package.json file may differ from the globally-installed Sails CLI release it was originally generated with.  (Be sure to always check out the relevant [upgrading guides](https://sailsjs.com/upgrading) before upgrading the version of Sails used by your app.  If you're stuck, [get help here](https://sailsjs.com/support).)
--->
-
+1. Create a droplet, wait for it to provision, get it's Floating IP, mine is `134.209.5.127`)
+1. `docker build . -t noitidart/my-private-container:the-sails-docker-droplet-app` (replace `noitidart` with your username and `my-private-container` with the name of your private container repo on docker hub)
+   * Test if it runs with `docker run noitidart/my-private-container:the-sails-docker-droplet-app`
+1. `docker login` login with your credentials
+1. `docker push noitidart/my-private-container:the-sails-docker-droplet-app`
+   * look at hash and take note of it. we'll compare when we pull on droplet
+1. Then ssh to droplet `ssh root@134.209.5.127` (this is the Floating IP we got earlier)
+1. Install docker there with:
+   * curl -L https://get.docker.com/ > getdocker.sh
+   * chmod +x getdocker.sh
+   * sudo ./getdocker.sh
+   * sudo usermod -aG docker root
+1. `docker login` with your credentials
+1. `docker pull noitidart/my-private-container:the-sails-docker-droplet-app`
+1. `docker run -p 1337:1337 -d noitidart/my-private-container:the-sails-docker-droplet-app`
+1. Wait for it to lift, you can figure out by getting yoru container id from `docker ps` then `docker logs -f THE_CONTAINE_ID_HERE`
+1. Check your non-https site out at http://134.209.5.127:1337
